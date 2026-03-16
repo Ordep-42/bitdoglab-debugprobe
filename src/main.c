@@ -41,6 +41,7 @@
 #include "probe_config.h"
 #include "probe.h"
 #include "cdc_uart.h"
+#include "oled_display.h"
 #include "autobaud.h"
 #include "get_serial.h"
 #include "tusb_edpt_handler.h"
@@ -145,6 +146,7 @@ int main(void) {
     board_init();
     usb_serial_init();
     cdc_uart_init();
+    oled_display_init();
     tusb_init();
     stdio_uart_init();
 

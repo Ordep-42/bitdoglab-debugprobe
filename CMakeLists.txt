@@ -25,6 +25,7 @@ add_executable(debugprobe
         src/sw_dp_pio.c
         src/tusb_edpt_handler.c
         src/autobaud.c
+        src/oled_display.c
 )
 
 target_sources(debugprobe PRIVATE
@@ -39,6 +40,7 @@ target_include_directories(debugprobe PRIVATE
         CMSIS_DAP/CMSIS/DAP/Firmware/Include/
         CMSIS_DAP/CMSIS/Core/Include/
         include/
+        lib/ssd1306/
         )
 
 target_compile_options(debugprobe PRIVATE -Wall)
@@ -83,6 +85,7 @@ if (DEBUG_ON_PICO)
     endif ()
 endif ()
 
+add_subdirectory(lib/ssd1306)
 
 target_link_libraries(debugprobe PRIVATE
         pico_multicore
@@ -96,6 +99,8 @@ target_link_libraries(debugprobe PRIVATE
         hardware_clocks
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap1
+        ssd1306
+        hardware_i2c
 )
 
 pico_set_binary_type(debugprobe copy_to_ram)

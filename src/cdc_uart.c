@@ -28,6 +28,7 @@
 #include "task.h"
 #include "tusb.h"
 #include "autobaud.h"
+#include "oled_display.h"
 
 #include "probe_config.h"
 
@@ -105,6 +106,10 @@ bool cdc_task(void)
     // Consume uart fifo regardless even if not connected
     while(uart_is_readable(PROBE_UART_INTERFACE) && (rx_len < sizeof(rx_buf))) {
         rx_buf[rx_len++] = uart_getc(PROBE_UART_INTERFACE);
+    }
+
+    for(uint i = 0; i< rx_len; i++) {
+    	oled_push_byte(rx_buf[i]);
     }
 
     if (tud_cdc_connected()) {
