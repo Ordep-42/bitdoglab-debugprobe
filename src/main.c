@@ -147,6 +147,7 @@ int main(void) {
     usb_serial_init();
     cdc_uart_init();
     oled_display_init();
+	oled_task_create();
     tusb_init();
     stdio_uart_init();
 
@@ -156,6 +157,8 @@ int main(void) {
 
     if (THREADED) {
         xTaskCreate(usb_thread, "TUD", configMINIMAL_STACK_SIZE, NULL, TUD_TASK_PRIO, &tud_taskhandle);
+        /* UART needs to preempt USB as if we don't, characters get lost */
+        xTaskCreate(cdc_thread, "UART", configMINIMAL_STACK_SIZE, NULL, UART_TASK_PRIO, &uart_taskhandle);
 #if (configNUMBER_OF_CORES > 1)
         vTaskCoreAffinitySet(tud_taskhandle, (1 << 0));
 #endif
@@ -253,7 +256,6 @@ void tud_suspend_cb(bool remote_wakeup_en)
   probe_info("Suspended\n");
   /* Were we actually configured? If not, threads don't exist */
   if (was_configured) {
-	  vTaskSuspend(uart_taskhandle);
 	  vTaskSuspend(dap_taskhandle);
     if (autobaud_running)
       autobaud_wait_stop();
@@ -266,7 +268,6 @@ void tud_resume_cb(void)
 {
   probe_info("Resumed\n");
   if (was_configured) {
-	  vTaskResume(uart_taskhandle);
 	  vTaskResume(dap_taskhandle);
     vTaskResume(autobaud_taskhandle);
   }
@@ -275,9 +276,7 @@ void tud_resume_cb(void)
 void tud_unmount_cb(void)
 {
   probe_info("Disconnected\n");
-  vTaskSuspend(uart_taskhandle);
   vTaskSuspend(dap_taskhandle);
-  vTaskDelete(uart_taskhandle);
   vTaskDelete(dap_taskhandle);
   if (autobaud_running)
     autobaud_wait_stop();
@@ -290,8 +289,6 @@ void tud_mount_cb(void)
 {
   probe_info("Connected, Configured\n");
   if (!was_configured) {
-    /* UART needs to preempt USB as if we don't, characters get lost */
-    xTaskCreate(cdc_thread, "UART", configMINIMAL_STACK_SIZE, NULL, UART_TASK_PRIO, &uart_taskhandle);
     /* Lowest priority thread is debug - need to shuffle buffers before we can toggle swd... */
     xTaskCreate(dap_thread, "DAP", configMINIMAL_STACK_SIZE, NULL, DAP_TASK_PRIO, &dap_taskhandle);
     /* Autobaud detection using PIO as a frequency counter */
